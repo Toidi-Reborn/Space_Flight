@@ -20,12 +20,11 @@ function resizeTrigger() {
     var windowH = window.innerHeight
     w = windowW - 50
 
-    topH = windowH * 0.15;
-    gameH = windowH * 0.6;
+    topH = windowH * 0.14;
+    gameH = windowH * 0.65;
     gameHmid = gameH / 2;
-    scoreH = windowH * 0.20;
+    scoreH = windowH * 0.14;
     gameWmid = w / 2;
-    console.log(gameWmid);
 
     topWindow.canvas.style.height = topH + "px";
     topWindow.canvas.style.width = w + "px";
@@ -53,7 +52,7 @@ class gameWindowClass {
         this.ctx = this.canvas.getContext("2d");
         this.shipStartX = 100;
         this.shipStartY = gameH * 0.80;
-        this.starPath = 'index/images/stars.jpg';
+        this.starPath = 'index/images/stars2.png';
         this.starImage = new Image();
         this.starImage.src = this.starPath;
         this.starX = 0;
@@ -86,9 +85,10 @@ class scoreWindowClass {
         this.ctx.font = "12px Arial";
         this.ctx.fillStyle = "white";
         this.f = ship.fuel.toFixed(0);
-        this.ctx.fillText("Fuel: " + this.f + "%", 5, 20);
+        this.d = ship.dam.toFixed(0);
+        this.ctx.fillText("Fuel: " + this.f + " Gallons", 5, 20);
         this.ctx.fillText("Distance Traveled: " + mile + " Miles", 5, 50 );
-        this.ctx.fillText("list: " + objectList.length, 5, 80 );
+        this.ctx.fillText("Damage: " + this.d + "%", 5, 80 );
     }
 }
 
@@ -96,12 +96,13 @@ class scoreWindowClass {
 class shipClass extends gameWindowClass{
     constructor() {
         super();
-        this.firePath = 'index/images/launcher.png';
+        this.firePath = 'index/images/wall.jpg';
         this.fireImage = new Image();
         this.fireImage.src = this.firePath;
         this.path = 'index/images/ship.png';
         this.image = new Image();
         this.fuel = 100;
+        this.dam = 100;
         this.image.src = this.path;
         this.go = false;
         this.travelDistance = 0;
@@ -149,29 +150,33 @@ class boostMasterClass {
 
     isHit = function(i) {
         if (ship.x < this.x + this.w && ship.x + ship.w > this.x && ship.y < this.y + this.h && ship.y + ship.h > this.y ) {
-            console.log('hit');
             this.hit(i);
         }
-
     }
+
+    kill = function(i) {        
+        delete objectList[i];
+        objectList.splice(i, 1);
+    }  
 }
 
 
 class speedBoost extends boostMasterClass {
     constructor(){
         super()
-        this.path = 'index/images/wall3.jpg';
+        this.path = 'index/images/speed.png';
         this.image = new Image();
         this.image.src = this.path;
     }
 
     draw = function() {
-        gameWindow.ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
+        gameWindow.ctx.drawImage(this.image, this.x, this.y, this.w * 2, this.h);
     }
 
-    hit = function() {
+    hit = function(i) {
         speedCountDown = 200;
         ship.speed = 3;
+        this.kill(i);
     }
 
 }
@@ -179,42 +184,40 @@ class speedBoost extends boostMasterClass {
 class garbageClass extends boostMasterClass {
     constructor(){
         super()
-        this.path = 'index/images/wall.jpg';
+        this.path = 'index/images/m1.png';
         this.image = new Image();
         this.image.src = this.path;
+        this.sizes = Array(0.45, 0.5, 0.75, 1, 2, 3);
+        this.sizer = this.sizes[Math.floor(Math.random() * this.sizes.length)];
     }
 
     draw = function() {
-        gameWindow.ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
+        gameWindow.ctx.drawImage(this.image, this.x, this.y, this.w * this.sizer, this.h * this.sizer);
     }
     
-    hit = function() {
-    
+    hit = function(i) {
+        ship.dam -= 10;
+        this.kill(i);
     }
 }
 
 class fuelClass extends boostMasterClass {
     constructor(){
         super()
-        this.path = 'index/images/launch.png';
+        this.path = 'index/images/gas.png';
         this.image = new Image();
         this.image.src = this.path;
     }
 
     draw = function() {
-        gameWindow.ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
+        gameWindow.ctx.drawImage(this.image, this.x, this.y, this.w * 2, this.h * 2);
     }
     
     hit = function(i) {
-        console.log(i);
-        ship.fuel += 20;
-        delete objectList[i];
-        objectList.splice(i, 1);
+        ship.fuel += 5;
+        this.kill(i);;
     }
-
 }
-
-
 
 
 var topWindow = new topWindowClass();
@@ -264,8 +267,6 @@ function draw() {
     var trigger = Math.random() * 1000;
     trigger = trigger.toFixed(0);
     
-
-
     if (speedCountDown != 0){
         speedCountDown -= 1;
     } else {
@@ -294,7 +295,6 @@ function draw() {
                 
             }
         }
-
 
         if (objectList.length > 0) {
             for (var i = 0; i < objectList.length; i++){

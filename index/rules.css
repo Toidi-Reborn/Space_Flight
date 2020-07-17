@@ -6,16 +6,25 @@
 #top {
     background: black;
     color:  white;
+    
+    position:   relative;
 }
 
 #gameArea {
-
+    position:   relative;
 }
 
-#scoreArea {
+#scoreArea, #scoreAreaParent {
+    position:   absolute;
+    color: white;   
+}
+
+#scoreAreaParent {
     background: black;
-    color: white;
+}
+
+#bottom {
+    position: absolute;
 
 
 }
-

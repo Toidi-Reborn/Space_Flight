@@ -1,6 +1,8 @@
 
 
-
+image {
+    position: absolute;
+}
 
 
 #top {
@@ -14,17 +16,16 @@
     position:   relative;
 }
 
-#scoreArea, #scoreAreaParent {
-    position:   absolute;
+#scoreArea {
+    position:   relative;
+    background: black;
     color: white;   
 }
-
-#scoreAreaParent {
-    background: black;
-}
-
-#bottom {
-    position: absolute;
-
-
-}
+@keyframes bgScrollLeft {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: -120px 0;
+    }
+  }

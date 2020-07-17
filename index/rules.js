@@ -11,7 +11,7 @@ DONE >  Boost images
 >  better images
 DONE >  Speed Boost
 >  Fix boost image shifting
->  Fix font
+DONE >  Fix font
 >  Explosion on Hit
 >  Game Over
 >  Logo Open
@@ -23,10 +23,8 @@ DONE >  Speed Boost
 >  Warning low fuel / high damage
 >  Gallon(s)
 
->  FIX canvas align
->  FIX game canvas stretch issue
-
-
+DONE >  FIX canvas align
+DONE >  FIX game canvas stretch issue
 
 
 
@@ -60,20 +58,27 @@ function resizeTrigger() {
     scoreH = windowH * 0.14;
     gameWmid = w / 20
 
-    topWindow.canvas.style.height = topH + "px";
-    topWindow.canvas.style.width = w + "px";
-    
+    topWindow.canvas.width = w;
+    topWindow.canvas.height = topH;
 
-    gameWindow.canvas.style.cssText = "height: " + gameH + "px; width: " + w + "px";
-    
-    scoreWindow.canvas.style.cssText = "left: " + 10 + "px; height: " + scoreH + "px";
-    scoreWindowParent.canvas.style.cssText = "left: " + 10 + "px;height: " + scoreH + "px; width: " + w + "px";
-    
-    //scoreWindow.canvas.width = scoreWindow.canvas.height * (scoreWindow.canvas.clientWidth / scoreWindow.canvas.clientHeight);
-    //scoreWindow.canvas.height = scoreWindow.canvas.width * (scoreWindow.canvas.clientHeight / scoreWindow.canvas.clientWidth);
-    //scoreWindow.canvas.style.cssText = "height: " + scoreH + "px; width: " + w + "px:";
+    gameWindow.canvas.width = w;
+    gameWindow.canvas.height = gameH;
 
+    scoreWindow.canvas.width = w;
+    scoreWindow.canvas.height = scoreH;
+
+    ship.y = gameH - 100;
+    
 }
+
+
+function startScroll(){
+
+
+    
+}
+
+
 
 
 
@@ -95,18 +100,18 @@ class gameWindowClass {
         this.starImage = new Image();
         this.starImage.src = this.starPath;
         this.starX = 0;
-        this.star2 = this.canvas.width;
+        //this.star2 = this.starX - this.canvas.width;
+        this.scrollStart = this.canvas.width * 0.45;
     }
 
     drawBack = function(){
-        this.ctx.drawImage(this.starImage, this.starX, 0, this.canvas.width, this.canvas.height);
-        this.ctx.drawImage(this.starImage, this.star2, 0, this.canvas.width, this.canvas.height);
-        if (this.starX + this.canvas.width <= 0) {
-            this.starX = this.star2 + this.canvas.width;
+        this.ctx.drawImage(this.starImage, this.starX, 0);
+        this.ctx.drawImage(this.starImage, this.starX + this.starImage.width, 0);
+        console.log(this.starImage.width)
+        
+        if (this.starX <= 0 - this.starImage.width) {
+            this.starX = 0;
         }
-        if (this.star2 + this.canvas.width <= 0) {
-            this.star2 = this.starX + this.canvas.width;
-        } 
     }
 }
 
@@ -123,8 +128,8 @@ class scoreWindowClass {
     constructor() {
         this.canvas = document.getElementById("scoreArea");
         this.ctx = this.canvas.getContext("2d");
-        this.canvas.width = this.canvas.height * (this.canvas.clientWidth / this.canvas.clientHeight);
-        this.canvas.height = this.canvas.width * (this.canvas.clientHeight / this.canvas.clientWidth);
+        //this.canvas.width = this.canvas.height * (this.canvas.clientWidth / this.canvas.clientHeight);
+        //this.canvas.height = this.canvas.width * (this.canvas.clientHeight / this.canvas.clientWidth);
 
     }
 
@@ -162,7 +167,7 @@ class shipClass extends gameWindowClass{
         this.speed = 4;
         this.speedBoost = 7;
         this.x = 20;
-        this.y = this.canvas.height - (this.canvas.height * 0.2);
+        //this.y = gameWindow.canvas.height - 50;
         this.w = 30;
         this.h = 30;
         this.fireX = this.x
@@ -190,9 +195,6 @@ class shipClass extends gameWindowClass{
             this.fireY -= this.speed / 2;
         } 
     }
-
-
-
 }
 
 
@@ -200,8 +202,8 @@ class boostMasterClass {
     constructor() {
         this.x = gameWindow.canvas.width;
         this.y = Math.random() * (gameWindow.canvas.height - 50);
-        this.w = 10;
-        this.h = 10;
+        this.w = 20;
+        this.h = 20;
     }
 
     isHit = function(i) {
@@ -382,7 +384,7 @@ function draw() {
     
     if (shipLaunch){
   
-        if (ship.x < gameWindow.canvas.width / 3) {
+        if (ship.x < gameWindow.scrollStart) {
             ship.x += ship.speed;
             ship.fireX += ship.speed;
             ship.travelDistance += ship.speed / 1000;
@@ -393,11 +395,11 @@ function draw() {
             boostEnabled = true;
         }
         
-        ship.fuel -= 0.1;
 
         if (ship.go == false) {
             ship.y += ship.speed / 5;
             ship.fireY += ship.speed / 5;
+            
             if (ship.y > gameWindow.canvas.height){
                 ship.fuel = 0;
                 console.log("game over");
@@ -405,14 +407,15 @@ function draw() {
                 boostEnabled = false;
             }
         }
+        else {
+            ship.fuel -= 0.1;
+        }
     }
 
     for (var i = 0; i < objectList.length; i++){
         objectList[i].isHit(i);
         //objectList.splice(i, 1);
     }
-
-
 
     if (ship.go) {
         ship.drawFire();
@@ -428,4 +431,4 @@ function draw() {
 }
 
 
-draw()
+draw();

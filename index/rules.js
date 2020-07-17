@@ -1,6 +1,40 @@
 
 
 
+
+
+
+
+/////////////////////////////  To-Do  /////////////////////////////
+/*
+DONE >  Boost images
+>  better images
+DONE >  Speed Boost
+>  Fix boost image shifting
+>  Fix font
+>  Explosion on Hit
+>  Game Over
+>  Logo Open
+>  Menu
+>  Instructions
+>  TOUCH
+>  Flame on/off
+>  Ship rotate
+>  Warning low fuel / high damage
+>  Gallon(s)
+
+>  FIX canvas align
+>  FIX game canvas stretch issue
+
+
+
+
+
+
+*/
+
+
+
 /////////////////////////////  Set-Up  /////////////////////////////
 
 
@@ -24,19 +58,24 @@ function resizeTrigger() {
     gameH = windowH * 0.65;
     gameHmid = gameH / 2;
     scoreH = windowH * 0.14;
-    gameWmid = w / 2;
+    gameWmid = w / 20
 
     topWindow.canvas.style.height = topH + "px";
     topWindow.canvas.style.width = w + "px";
+    
 
-    gameWindow.canvas.style.cssText = "height: " + gameH + "px; width: " + w + "px;";
-    scoreWindow.canvas.style.cssText = "height: " + scoreH + "px; width: " + w + "px";
-    console.log(w)
+    gameWindow.canvas.style.cssText = "height: " + gameH + "px; width: " + w + "px";
+    
+    scoreWindow.canvas.style.cssText = "left: " + 10 + "px; height: " + scoreH + "px";
+    scoreWindowParent.canvas.style.cssText = "left: " + 10 + "px;height: " + scoreH + "px; width: " + w + "px";
+    
+    //scoreWindow.canvas.width = scoreWindow.canvas.height * (scoreWindow.canvas.clientWidth / scoreWindow.canvas.clientHeight);
+    //scoreWindow.canvas.height = scoreWindow.canvas.width * (scoreWindow.canvas.clientHeight / scoreWindow.canvas.clientWidth);
+    //scoreWindow.canvas.style.cssText = "height: " + scoreH + "px; width: " + w + "px:";
+
 }
 
-var ship = 'index/images/controls.png'
-var shipIMG = new Image();
-shipIMG.src = ship;
+
 
 /////////////////////////////  Classes  /////////////////////////////
 
@@ -71,21 +110,34 @@ class gameWindowClass {
     }
 }
 
+class scoreWindowParentClass {
+    constructor() {
+        this.canvas = document.getElementById("scoreAreaParent");
+
+    }
+
+}
+
 
 class scoreWindowClass {
     constructor() {
         this.canvas = document.getElementById("scoreArea");
         this.ctx = this.canvas.getContext("2d");
+        this.canvas.width = this.canvas.height * (this.canvas.clientWidth / this.canvas.clientHeight);
+        this.canvas.height = this.canvas.width * (this.canvas.clientHeight / this.canvas.clientWidth);
 
     }
 
     drawtext = function() {
         var mile = ship.travelDistance;
         mile = mile.toFixed(1);
-        this.ctx.font = "12px Arial";
+        this.ctx.font = "21px Arial";
         this.ctx.fillStyle = "white";
         this.f = ship.fuel.toFixed(0);
         this.d = ship.dam.toFixed(0);
+
+        // add 1 for gal vs gals
+
         this.ctx.fillText("Fuel: " + this.f + " Gallons", 5, 20);
         this.ctx.fillText("Distance Traveled: " + mile + " Miles", 5, 50 );
         this.ctx.fillText("Damage: " + this.d + "%", 5, 80 );
@@ -107,7 +159,8 @@ class shipClass extends gameWindowClass{
         this.go = false;
         this.travelDistance = 0;
         this.difficulty = 1;
-        this.speed = 2;
+        this.speed = 4;
+        this.speedBoost = 7;
         this.x = 20;
         this.y = this.canvas.height - (this.canvas.height * 0.2);
         this.w = 30;
@@ -137,6 +190,9 @@ class shipClass extends gameWindowClass{
             this.fireY -= this.speed / 2;
         } 
     }
+
+
+
 }
 
 
@@ -187,6 +243,9 @@ class garbageClass extends boostMasterClass {
         this.path = 'index/images/m1.png';
         this.image = new Image();
         this.image.src = this.path;
+        this.path = 'index/images/m2.png';
+        this.image2 = new Image();
+        this.image2.src = this.path;
         this.sizes = Array(0.45, 0.5, 0.75, 1, 2, 3);
         this.sizer = this.sizes[Math.floor(Math.random() * this.sizes.length)];
     }
@@ -196,9 +255,14 @@ class garbageClass extends boostMasterClass {
     }
     
     hit = function(i) {
-        ship.dam -= 10;
+        ship.dam -= 1;
         this.kill(i);
+        
+        gameWindow.ctx.drawImage(this.image2, this.x, this.y, this.w * (this.sizer * 2), this.h * (this.sizer * 2));
     }
+
+
+
 }
 
 class fuelClass extends boostMasterClass {
@@ -223,6 +287,7 @@ class fuelClass extends boostMasterClass {
 var topWindow = new topWindowClass();
 var gameWindow = new gameWindowClass();
 var scoreWindow = new scoreWindowClass();
+var scoreWindowParent = new scoreWindowParentClass();
 var ship = new shipClass();
 
 
@@ -269,10 +334,10 @@ function draw() {
     
     if (speedCountDown != 0){
         speedCountDown -= 1;
-    } else {
-        ship.speed = 2;
+        ship.speed = ship.speedBoost;
     }
-
+    
+    
     if (boostEnabled) {
         spawnTimer -= 50;
         if (spawnTimer == 0) {
@@ -310,7 +375,7 @@ function draw() {
     }
 
 
-    if (ship.fuel <= 0.1){
+    if (ship.fuel <= 0.5){
         ship.go = false;
         ship.fuel = 0;
     }
@@ -331,8 +396,8 @@ function draw() {
         ship.fuel -= 0.1;
 
         if (ship.go == false) {
-            ship.y += ship.speed / 2;
-            ship.fireY += ship.speed / 2;
+            ship.y += ship.speed / 5;
+            ship.fireY += ship.speed / 5;
             if (ship.y > gameWindow.canvas.height){
                 ship.fuel = 0;
                 console.log("game over");
@@ -348,7 +413,6 @@ function draw() {
     }
 
 
-    scoreWindow.drawtext();
 
     if (ship.go) {
         ship.drawFire();
@@ -357,7 +421,9 @@ function draw() {
     ship.drawShip();
     
     if (running) {
+        scoreWindow.drawtext();
         requestAnimationFrame(draw);
+        
     }
 }
 

@@ -197,6 +197,7 @@ class shipClass extends gameWindowClass{
     }
 }
 
+//ON  nenwnenwnenwnenwenwnewnenenwnen
 
 class boostMasterClass {
     constructor() {

@@ -37,7 +37,7 @@ DONE >  FIX game canvas stretch issue
 
 /////////////////////////////  Set-Up  /////////////////////////////
 
-var debugMode = true;
+var debugMode = false;
 var w;
 var topH, gameH, scoreH, gameW;
 var running = true;
@@ -256,8 +256,6 @@ class shipClass extends gameWindowClass{
             }
         }
     }
-
-
 }
 
 class boostMasterClass {

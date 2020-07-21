@@ -41,11 +41,14 @@ var debugMode = false;
 var w;
 var topH, gameH, scoreH, gameW;
 var running = true;
+var gameRunning = true;
 var shipLaunch = false;
 var gamegoing = true;
 var boostEnabled = false;
 var spawnTimer = 1000;
 var speedCountDown = 0;
+var expList = [];
+var mouseX, mouseY, bSelected, bTrigger;
 
 
 ///////////////////////////// Functions /////////////////////////////
@@ -62,6 +65,9 @@ function resizeTrigger() {
 
     topWindow.canvas.width = w;
     topWindow.canvas.height = topH;
+    topWindow.bW = ( w - (topWindow.buttonNum * topWindow.bGap) - topWindow.bGap) / topWindow.buttonNum;
+    topWindow.midY = (topH - (topWindow.bH)) / 2;
+
 
     gameWindow.canvas.width = w;
     gameWindow.canvas.height = gameH;
@@ -80,21 +86,73 @@ class topWindowClass {
     constructor() {
         this.canvas = document.getElementById("top");
         this.ctx = this.canvas.getContext("2d");
+        this.buttonNum = 5;
+        this.bGap = 10;
+        this.bW;
+        this.bH = 50;
+        this.bX = this.bGap;
+        this.midY;
+        this.buttonNames = ["Menu 1", "Menu 2", "Menu 3", "Menu 4", "Menu 5"];
+        this.buttons = [];
     }
 
     startText = function(){
         this.ctx.font = "35px Arial";
         this.ctx.fillStyle = "white";
-
         this.ctx.fillText("Press Space to apply Fuel!!", 15, 50);
+    }
 
+    menu = function(i) {
+        for (var i = 0; i < topWindow.buttonNum; i++) {
 
+            var newX = this.bX + (i * (this.bGap + this.bW));
+            this.text = this.buttonNames[i];
+            var a = new buttonClass(newX , this.midY, this.bW, this.bH, this.text );  // x, y, w, h, t\
+            topWindow.buttons.push(a);
+        }
 
     }
 
-
-
 }
+
+
+class buttonClass {
+    constructor(x, y, w, h, text) {
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
+        this.text = text;
+        this.color = "silver";
+    }
+
+    draw = function() {
+        this.canvas = document.getElementById("top");
+        this.ctx = this.canvas.getContext("2d");
+        this.ctx.beginPath();
+        this.ctx.rect(this.x, this.y, this.w, this.h);
+        this.ctx.fillStyle = this.color;
+        this.ctx.fill();
+        this.ctx.font = "15px Arial";
+        this.ctx.fillStyle = "white";
+        this.ctx.fillText(this.text, this.x, 50)
+        this.ctx.closePath();
+    }
+
+
+    hover = function() {
+        if (mouseX > this.x && mouseX < this.x + this.w && mouseY > this.y && mouseY < this.y + this.h) {
+            this.color = "red";
+            bSelected = this.text;
+            bTrigger = true;
+        } else {
+            this.color = "silver";
+        }
+
+    }
+}
+
+
 
 class gameWindowClass {
     constructor() {
@@ -161,6 +219,40 @@ class scoreWindowClass {
     }
 }
 
+class explosionSprite extends gameWindowClass {
+    constructor(i){
+        super();
+        this.image = new Image();
+        this.image.src = 'index/images/explosion.png';
+        this.frameX = 0;
+        this.frameY = 3;
+        this.moveX = 128;        
+        this.moveY = 126;
+        this.trigger = true;
+        this.object = objectList[i];
+        this.x = this.object.x;
+        this.y = this.object.y;
+    }
+
+
+    drawExplosion = function(){
+        if (this.trigger){   
+            this.ctx.drawImage(this.image, this.moveX * this.frameX, this.moveY * this.frameY, this.moveX, this.moveY, this.x-50, this.y-50, 100 , 100);
+            this.frameX += 1;
+            if (this.frameX == 6){
+                this.frameX = 0;
+                this.frameY += 1;
+                if (this.frameY == 5){
+                    this.frameY = 3;
+                    this.trigger = false;
+                }
+            }
+        }
+
+    }
+}
+
+
 ///////////////// Ship
 
 class shipClass extends gameWindowClass{
@@ -186,7 +278,6 @@ class shipClass extends gameWindowClass{
         this.speedBoost = 15;
         this.speed = this.speedNormal;
         this.x = 20;
-        //this.y = gameH - 50;
         this.w = 150;
         this.fireW = this.w * 0.33;
         this.h = 100;
@@ -307,7 +398,7 @@ class garbageClass extends boostMasterClass {
         this.path = 'index/images/m2.png';
         this.image2 = new Image();
         this.image2.src = this.path;
-        this.sizes = Array(0.45, 0.5, 0.75, 1, 2, 3);
+        this.sizes = Array(1, 2, 3);
         this.sizer = this.sizes[Math.floor(Math.random() * this.sizes.length)];
     }
 
@@ -317,13 +408,11 @@ class garbageClass extends boostMasterClass {
     
     hit = function(i) {
         ship.dam -= 1;
-        this.kill(i);
         
-        gameWindow.ctx.drawImage(this.image2, this.x, this.y, this.w * (this.sizer * 2), this.h * (this.sizer * 2));
+        var boom = new explosionSprite(i);
+        expList.push(boom);
+        this.kill(i);
     }
-
-
-
 }
 
 class fuelClass extends boostMasterClass {
@@ -351,7 +440,6 @@ var scoreWindow = new scoreWindowClass();
 var scoreWindowParent = new scoreWindowParentClass();
 var ship = new shipClass();
 
-
 /////////////////////////////  Events Listen  /////////////////////////////
 
 window.addEventListener('resize', resizeTrigger);
@@ -359,7 +447,13 @@ window.addEventListener('resize', resizeTrigger);
 // Keyboard Listen
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
+
+// Mouse Listen
+document.addEventListener("mousemove", mouseMoveHandler, false);
+document.addEventListener("click", mouseClickHandler, false);
+
 resizeTrigger();
+topWindow.menu();
 
 
 //////////////////////////// KEY INPUT ///////////////////////////////////
@@ -370,16 +464,30 @@ function keyDownHandler(e) {
   
     if(e.key == " ") {
       ship.go = true;
-      
       shipLaunch = true;
+    }
+    else if (e.key == "t") {
+        console.log(topWindow.buttons[2].text);
     }
   }
 
-  function keyUpHandler(e) {
+function keyUpHandler(e) {
     if(e.key == " ") {
       ship.go = false;
     }
-  }
+}
+
+//////////////////////////// Mouse Move ///////////////////////////////////
+
+
+function mouseMoveHandler(e) {
+    mouseX =  e.clientX - topWindow.canvas.offsetLeft;
+    mouseY =  e.clientY - topWindow.canvas.offsetTop;
+}
+
+function mouseClickHandler(e) {
+    console.log(bSelected);
+}
 
 
 /////////////////////////////  Main Loop  /////////////////////////////
@@ -389,110 +497,129 @@ var objectList = [];
 function draw() {
     gameWindow.ctx.clearRect(0,0, gameWindow.canvas.width, gameWindow.canvas.height);
     scoreWindow.ctx.clearRect(0,0, gameWindow.canvas.width, gameWindow.canvas.height);
-    gameWindow.drawBack();
-    var trigger = Math.random() * 1000;
-    trigger = trigger.toFixed(0);
-    
-    topWindow.startText();
 
-
-    if (speedCountDown > 0){
-        speedCountDown -= 1;
-        ship.speed = ship.speedBoost;
-    } else {
-        ship.speed = ship.speedNormal;
+    bTrigger = false;    
+    for (var i = 0; i < topWindow.buttonNum; i++) {
+        topWindow.buttons[i].draw();
+        topWindow.buttons[i].hover();
     }
+    if (bTrigger == false) {
+        bSelected = "none";    
+    }
+
+
+    gameWindow.drawBack();
     
+    if (gameRunning){
+        var trigger = Math.random() * 1000;
+        trigger = trigger.toFixed(0);
     
-    if (boostEnabled) {
-        spawnTimer -= 50;
-        if (spawnTimer == 0) {
-            spawnTimer = 1000;
-        } else if (spawnTimer == 500 || spawnTimer == 250) {
-
-            if (trigger < 100 / ship.difficulty) {
-                a = new speedBoost;
-                objectList.push(a);
-            }
-
-            else if (trigger < 200 / ship.difficulty) {
-                a = new fuelClass;
-                objectList.push(a);
-            }
-
-            else if (trigger < 400 * ship.difficulty) {
-                a = new garbageClass;
-                objectList.push(a);
-                
-            }
+        if (speedCountDown > 0){
+            speedCountDown -= 1;
+            ship.speed = ship.speedBoost;
+        } else {
+            ship.speed = ship.speedNormal;
         }
-
-        if (objectList.length > 0) {
-            for (var i = 0; i < objectList.length; i++){
-                objectList[i].draw();
-                objectList[i].x -= 1 * ship.speed;
         
-                if (objectList[i].x < -20) {
-                    delete objectList[i];
-                    objectList.splice(i, 1);
+        
+        if (boostEnabled) {
+            spawnTimer -= 50;
+            if (spawnTimer == 0) {
+                spawnTimer = 1000;
+            } else if (spawnTimer == 500 || spawnTimer == 250) {
+
+                if (trigger < 100 / ship.difficulty) {
+                    a = new speedBoost;
+                    objectList.push(a);
+                }
+
+                else if (trigger < 200 / ship.difficulty) {
+                    a = new fuelClass;
+                    objectList.push(a);
+                }
+
+                else if (trigger < 400 * ship.difficulty) {
+                    a = new garbageClass;
+                    objectList.push(a);
+                    
+                }
+            }
+
+            if (objectList.length > 0) {
+                for (var i = 0; i < objectList.length; i++){
+                    objectList[i].draw();
+                    objectList[i].x -= 1 * ship.speed;
+            
+                    if (objectList[i].x < -20) {
+                        delete objectList[i];
+                        objectList.splice(i, 1);
+                    }
                 }
             }
         }
-    }
 
 
-    if (ship.fuel <= 0.5){
-        ship.go = false;
-        ship.fuel = 0;
-    }
-
-    if (ship.y > gameWindow.canvas.height - (ship.h * 0.75)){
-        ship.image.src = ship.path7;
-        ship.fuel = 0;
-        shipLaunch = false;
-        boostEnabled = false;
-        ship.go = false;
-    }
-
-
-    ship.drawShip();
-
-    if (shipLaunch){
-  
-        if (ship.x < gameWindow.scrollStart) {
-            ship.x += ship.speed;
-            ship.fireX += ship.speed;
-            ship.travelDistance += ship.speed / 1000;
-        } else {
-            gameWindow.starX -= ship.speed;
-            gameWindow.star2 -= ship.speed;
-            ship.travelDistance += ship.speed / 1000;
-            boostEnabled = true;
-        }
-                    
-        if (ship.go){
-            ship.drawFire();
-            if (ship.y > 0.5) {
-                ship.y -= ship.speed / 4;
-                ship.fireY -= ship.speed / 4;
+        if (expList.length > 0){
+            for (var i = 0; i < expList.length; i++){
+                expList[i].drawExplosion();
             }
-            ship.fuel -= (0.05 * (ship.speed / 25));
-        } else {
-            ship.y += ship.speed / 5;
-            ship.fireY += ship.speed / 5;
+
         }
-        ship.levelCheck();
-    }
-
-    for (var i = 0; i < objectList.length; i++){
-        objectList[i].isHit(i);
-        //objectList.splice(i, 1);
-    }
 
 
+        if (ship.fuel <= 0.5){
+            ship.go = false;
+            ship.fuel = 0;
+        }
 
+        if (ship.y > gameWindow.canvas.height - (ship.h * 0.75)){
+            ship.image.src = ship.path7;
+            ship.fuel = 0;
+            shipLaunch = false;
+            boostEnabled = false;
+            ship.go = false;
+        }
 
+        ship.drawShip();
+
+        if (shipLaunch){
     
+            if (ship.x < gameWindow.scrollStart) {
+                ship.x += ship.speed;
+                ship.fireX += ship.speed;
+                ship.travelDistance += ship.speed / 1000;
+            } else {
+                gameWindow.starX -= ship.speed;
+                gameWindow.star2 -= ship.speed;
+                ship.travelDistance += ship.speed / 1000;
+                boostEnabled = true;
+            }
+                        
+            if (ship.go){
+                ship.drawFire();
+                if (ship.y > 0.5) {
+                    ship.y -= ship.speed / 4;
+                    ship.fireY -= ship.speed / 4;
+                }
+                ship.fuel -= (0.05 * (ship.speed / 25));
+            } else {
+                ship.y += ship.speed / 5;
+                ship.fireY += ship.speed / 5;
+            }
+            ship.levelCheck();
+        }
+
+        for (var i = 0; i < objectList.length; i++){
+            objectList[i].isHit(i);
+            //objectList.splice(i, 1);
+        }
+        
+    }
+
+
+
+
+
     if (running) {
         scoreWindow.drawtext();
         requestAnimationFrame(draw);

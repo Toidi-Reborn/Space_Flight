@@ -1,10 +1,6 @@
 
 
 
-
-
-
-
 /////////////////////////////  To-Do  /////////////////////////////
 /*
 DONE >  Boost images
@@ -24,8 +20,8 @@ DONE >  Flame on/off
 >  Ship rotate
 DONE >  Fuel and Life bars
 DONE >  Warning low fuel / high damage  - Bars flash when low
->  Gallon(s)
-
+DONE >  Gallon(s) - No longer needed
+DONE >  Align text center
 DONE >  FIX canvas align
 DONE >  FIX game canvas stretch issue
 
@@ -127,6 +123,7 @@ class buttonClass {
         this.text = text;
         this.color = "silver";
         this.enabled = true;
+        this.mid = (this.x + (this.x + this.w)) / 2;
     }
 
     draw = function() {
@@ -137,13 +134,14 @@ class buttonClass {
         this.ctx.rect(this.x, this.y, this.w, this.h);
         this.ctx.fillStyle = this.color;
         this.ctx.fill();
-        this.ctx.font = "15px Arial";
-        this.ctx.fillStyle = "white";
-        this.ctx.fillText(this.text, this.x, 50)
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "middle";
+        this.ctx.font = "20px Arial";
+        this.ctx.fillStyle = "black";
+        this.ctx.fillText(this.text, this.mid, 50)
         this.ctx.closePath();
         
     }
-
 
     hover = function() {
         if (this.enabled) {
@@ -295,7 +293,6 @@ class damageBarClass extends scoreWindowClass {
 
 
 }
-
 
 class explosionSprite extends gameWindowClass {
     constructor(i){
@@ -575,8 +572,7 @@ function mouseClickHandler(e) {
     console.log(bSelected);
     if (bSelected == topWindow.buttons[0].text) {
         gameRunning = true;
-    }
-    
+    }   
 }
 
 

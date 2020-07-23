@@ -14,15 +14,16 @@ DONE > Different images based on damage
 DONE >  Speed Boost
 >  Fix boost image shifting
 DONE >  Fix font
->  Explosion on Hit
+DONE >  Explosion on Hit - done but could be better
 >  Game Over
 >  Logo Open
->  Menu
+>  Menu, started
 >  Instructions
 >  TOUCH
 DONE >  Flame on/off
 >  Ship rotate
->  Warning low fuel / high damage
+DONE >  Fuel and Life bars
+DONE >  Warning low fuel / high damage  - Bars flash when low
 >  Gallon(s)
 
 DONE >  FIX canvas align
@@ -41,7 +42,7 @@ var debugMode = false;
 var w;
 var topH, gameH, scoreH, gameW;
 var running = true;
-var gameRunning = true;
+var gameRunning = false;
 var shipLaunch = false;
 var gamegoing = true;
 var boostEnabled = false;
@@ -80,6 +81,7 @@ function resizeTrigger() {
     
 }
 
+
 /////////////////////////////  Classes  /////////////////////////////
 
 class topWindowClass {
@@ -92,7 +94,7 @@ class topWindowClass {
         this.bH = 50;
         this.bX = this.bGap;
         this.midY;
-        this.buttonNames = ["Menu 1", "Menu 2", "Menu 3", "Menu 4", "Menu 5"];
+        this.buttonNames = ["New / Start", "Instructions - Disabled", "HighScores - Disabled", "Menu 4 - Disabled", "Menu 5 - Disabled"];
         this.buttons = [];
     }
 
@@ -124,11 +126,13 @@ class buttonClass {
         this.h = h;
         this.text = text;
         this.color = "silver";
+        this.enabled = true;
     }
 
     draw = function() {
         this.canvas = document.getElementById("top");
-        this.ctx = this.canvas.getContext("2d");
+        this.ctx = this.canvas.getContext("2d");       
+        
         this.ctx.beginPath();
         this.ctx.rect(this.x, this.y, this.w, this.h);
         this.ctx.fillStyle = this.color;
@@ -137,22 +141,22 @@ class buttonClass {
         this.ctx.fillStyle = "white";
         this.ctx.fillText(this.text, this.x, 50)
         this.ctx.closePath();
+        
     }
 
 
     hover = function() {
-        if (mouseX > this.x && mouseX < this.x + this.w && mouseY > this.y && mouseY < this.y + this.h) {
-            this.color = "red";
-            bSelected = this.text;
-            bTrigger = true;
-        } else {
-            this.color = "silver";
+        if (this.enabled) {
+            if (mouseX > this.x && mouseX < this.x + this.w && mouseY > this.y && mouseY < this.y + this.h) {
+                this.color = "red";
+                bSelected = this.text;
+                bTrigger = true;
+            } else {
+                this.color = "silver";
+            }
         }
-
     }
 }
-
-
 
 class gameWindowClass {
     constructor() {
@@ -211,13 +215,87 @@ class scoreWindowClass {
         this.d = ship.dam.toFixed(0);
 
         // add 1 for gal vs gals
-
-        this.ctx.fillText("Fuel: " + this.f + " Gallons", 5, 20);
-        this.ctx.fillText("Distance Traveled: " + mile + " Miles", 5, 50 );
-        this.ctx.fillText("Damage: " + this.d + "%", 5, 80 );
+        this.ctx.fillText("Fuel: " + this.f + "%", 5, 20);
+        this.ctx.fillText("Life:  " + this.d + "%", 5, 50 );
+        this.ctx.fillText("Distance Traveled: " + mile + " Miles", 5, 80 );
 
     }
+
 }
+
+class damageBarClass extends scoreWindowClass {
+    constructor() {
+        super();
+        this.canvas = document.getElementById("scoreArea");
+        this.ctx = this.canvas.getContext("2d");
+        this.barSize = 500;
+        this.barBackColor = "white";
+        this.fuel = 500;
+        this.life = 500;
+        this.fCountDown = 20;
+        this.dCountDown = 20;
+        this.change = this.barSize / 100;
+    }
+
+    drawBar = function() {
+        this.life2 = ship.fuel * this.change;
+        this.ctx.fillStyle = this.barBackColor;
+        this.ctx.fillRect(115, 5, this.barSize, 20);
+        this.colorChange();
+        this.ctx.fillRect(115, 5, this.life2, 20);
+        
+        this.life = ship.dam * this.change;
+        this.ctx.fillStyle = this.barBackColor;
+        this.ctx.fillRect(115, 35, this.barSize, 20);
+        this.colorChange2();
+        this.ctx.fillRect(115, 35, this.life, 20);
+
+    }
+
+    colorChange = function() {
+
+        if (ship.fuel < 10) {
+            this.fCountDown -= 1;      
+            if (this.fCountDown < 1) {
+                this.fCountDown = 20;
+            }         
+            if (this.fCountDown < 15) {
+                this.ctx.fillStyle = "red"
+            } else {
+                this.ctx.fillStyle = this.barBackColor;
+            }
+        } else if (ship.fuel < 20) {
+            this.ctx.fillStyle = "red";
+        } else if (ship.fuel < 60) {
+            this.ctx.fillStyle = "yellow";
+        } else {
+            this.ctx.fillStyle = "blue";
+        }
+    }
+    colorChange2 = function() {
+        
+        if (ship.dam < 10) {
+            this.dCountDown -= 1;      
+            if (this.dCountDown < 1) {
+                this.dCountDown = 20;
+            }         
+            if (this.dCountDown < 15) {
+                this.ctx.fillStyle = "red"
+            } else {
+                this.ctx.fillStyle = this.barBackColor;
+            }
+        } else if (ship.dam < 20) {
+            this.ctx.fillStyle = "red";
+        } else if (ship.dam < 60) {
+            this.ctx.fillStyle = "yellow";
+        } else {
+            this.ctx.fillStyle = "blue";
+        }
+    }
+
+
+}
+
 
 class explosionSprite extends gameWindowClass {
     constructor(i){
@@ -407,8 +485,9 @@ class garbageClass extends boostMasterClass {
     }
     
     hit = function(i) {
-        ship.dam -= 1;
-        
+        if (ship.go) {
+            ship.dam -= 1;
+        }            
         var boom = new explosionSprite(i);
         expList.push(boom);
         this.kill(i);
@@ -437,6 +516,7 @@ class fuelClass extends boostMasterClass {
 var topWindow = new topWindowClass();
 var gameWindow = new gameWindowClass();
 var scoreWindow = new scoreWindowClass();
+var damageBar = new damageBarClass();
 var scoreWindowParent = new scoreWindowParentClass();
 var ship = new shipClass();
 
@@ -454,7 +534,10 @@ document.addEventListener("click", mouseClickHandler, false);
 
 resizeTrigger();
 topWindow.menu();
-
+topWindow.buttons[1].enabled = false;
+topWindow.buttons[2].enabled = false;
+topWindow.buttons[3].enabled = false;
+topWindow.buttons[4].enabled = false;
 
 //////////////////////////// KEY INPUT ///////////////////////////////////
 
@@ -462,7 +545,7 @@ topWindow.menu();
 function keyDownHandler(e) {
     //console.log(e.key);
   
-    if(e.key == " ") {
+    if(e.key == " " && gameRunning) {
       ship.go = true;
       shipLaunch = true;
     }
@@ -485,8 +568,15 @@ function mouseMoveHandler(e) {
     mouseY =  e.clientY - topWindow.canvas.offsetTop;
 }
 
+
+//////////////////////////// Mouse Click ///////////////////////////////////
+
 function mouseClickHandler(e) {
     console.log(bSelected);
+    if (bSelected == topWindow.buttons[0].text) {
+        gameRunning = true;
+    }
+    
 }
 
 
@@ -509,6 +599,7 @@ function draw() {
 
 
     gameWindow.drawBack();
+    damageBar.drawBar();
     
     if (gameRunning){
         var trigger = Math.random() * 1000;
@@ -567,7 +658,7 @@ function draw() {
         }
 
 
-        if (ship.fuel <= 0.5){
+        if (ship.fuel <= 0.5 || ship.dam <= 0.5){
             ship.go = false;
             ship.fuel = 0;
         }
@@ -575,6 +666,7 @@ function draw() {
         if (ship.y > gameWindow.canvas.height - (ship.h * 0.75)){
             ship.image.src = ship.path7;
             ship.fuel = 0;
+            ship.dam = 0;
             shipLaunch = false;
             boostEnabled = false;
             ship.go = false;

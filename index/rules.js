@@ -8,7 +8,7 @@ DONE >  Boost images
 DONE > Different images based on damage
 >  again, better images?
 DONE >  Speed Boost
->  Fix boost image shifting
+>  Fix boost images shifting
 DONE >  Fix font
 DONE >  Explosion on Hit - done but could be better
 >  Game Over
@@ -30,14 +30,13 @@ DONE >  FIX game canvas stretch issue
 
 */
 
-
-
 /////////////////////////////  Set-Up  /////////////////////////////
 
 var debugMode = false;
 var w;
 var topH, gameH, scoreH, gameW;
 var running = true;
+var gameMode = 1;
 var gameRunning = false;
 var shipLaunch = false;
 var gamegoing = true;
@@ -46,7 +45,8 @@ var spawnTimer = 1000;
 var speedCountDown = 0;
 var expList = [];
 var mouseX, mouseY, bSelected, bTrigger;
-
+var shipUp = false;
+var shipDown = false;
 
 ///////////////////////////// Functions /////////////////////////////
 function resizeTrigger() {
@@ -62,7 +62,7 @@ function resizeTrigger() {
 
     topWindow.canvas.width = w;
     topWindow.canvas.height = topH;
-    topWindow.bW = ( w - (topWindow.buttonNum * topWindow.bGap) - topWindow.bGap) / topWindow.buttonNum;
+    topWindow.bW = ( w - (topWindow.buttons.length * topWindow.bGap) - topWindow.bGap) / topWindow.buttonNum;
     topWindow.midY = (topH - (topWindow.bH)) / 2;
 
 
@@ -90,8 +90,13 @@ class topWindowClass {
         this.bH = 50;
         this.bX = this.bGap;
         this.midY;
-        this.buttonNames = ["New / Start", "Instructions - Disabled", "HighScores - Disabled", "Menu 4 - Disabled", "Menu 5 - Disabled"];
+        this.buttonNames = ["New / Start", "Game Mode", "Instructions - Disabled"];
+        this.subButtonsNames1 = ["Space Bar Mode", "Up/Down Mode"];
+        this.subButtonsNames2 = ["Space ", "n Mode"];
         this.buttons = [];
+        this.subButtons1 = [];
+        this.subButtons2 = [];
+        this.menu2Open = false;
     }
 
     startText = function(){
@@ -100,17 +105,43 @@ class topWindowClass {
         this.ctx.fillText("Press Space to apply Fuel!!", 15, 50);
     }
 
-    menu = function(i) {
-        for (var i = 0; i < topWindow.buttonNum; i++) {
 
+    // set up menus - trigger once
+    menu = function(i) {
+        for (var i = 0; i < this.buttonNames.length; i++) {
             var newX = this.bX + (i * (this.bGap + this.bW));
             this.text = this.buttonNames[i];
             var a = new buttonClass(newX , this.midY, this.bW, this.bH, this.text );  // x, y, w, h, t\
             topWindow.buttons.push(a);
         }
 
+        for (var i = 0; i < this.subButtonsNames1.length; i++) {
+            var newX = (this.buttons[1].x - this.bGap) + this.bX + (i * (this.bGap + this.bW)); //this.buttonNames[1].x  added to shift sub buttons
+            this.text = this.subButtonsNames1[i];
+            var a = new buttonClass(newX , this.midY + 75, this.bW, this.bH, this.text );  // x, y, w, h, t\
+            topWindow.subButtons1.push(a);
+        }
+
+        for (var i = 0; i < this.subButtonsNames2.length; i++) {
+            var newX = (this.buttons[1].x - this.bGap) + this.bX + (i * (this.bGap + this.bW)); //this.buttonNames[1].x  added to shift sub buttons
+            this.text = this.subButtonsNames2[i];
+            var a = new buttonClass(newX , this.midY + 75, this.bW, this.bH, this.text );  // x, y, w, h, t\
+            topWindow.subButtons2.push(a);
+        }
     }
 
+
+    menu2 = function() {
+        if (this.canvas.height > topH) {
+            this.canvas.height = topH;
+            this.menu2Open = false;
+            this.buttons[0].enabled = true;
+        } else {
+            this.canvas.height = topH + 75;
+            this.menu2Open = true;
+            this.buttons[0].enabled = false;
+        }
+    }   
 }
 
 
@@ -122,7 +153,9 @@ class buttonClass {
         this.h = h;
         this.text = text;
         this.color = "silver";
+        this.dColor = "grey";
         this.enabled = true;
+        this.active = true;
         this.mid = (this.x + (this.x + this.w)) / 2;
     }
 
@@ -132,13 +165,17 @@ class buttonClass {
         
         this.ctx.beginPath();
         this.ctx.rect(this.x, this.y, this.w, this.h);
-        this.ctx.fillStyle = this.color;
+        if (this.enabled) {
+            this.ctx.fillStyle = this.color;
+        } else {
+            this.ctx.fillStyle = this.dColor;    
+        }
         this.ctx.fill();
         this.ctx.textAlign = "center";
         this.ctx.textBaseline = "middle";
         this.ctx.font = "20px Arial";
         this.ctx.fillStyle = "black";
-        this.ctx.fillText(this.text, this.mid, 50)
+        this.ctx.fillText(this.text, this.mid, this.y + (this.h / 2));
         this.ctx.closePath();
         
     }
@@ -290,8 +327,6 @@ class damageBarClass extends scoreWindowClass {
             this.ctx.fillStyle = "blue";
         }
     }
-
-
 }
 
 class explosionSprite extends gameWindowClass {
@@ -504,7 +539,12 @@ class fuelClass extends boostMasterClass {
     }
     
     hit = function(i) {
-        ship.fuel += 5;
+        if (ship.fuel < 95) {
+            ship.fuel += 5;
+        }
+        if (ship.fuel > 100) {
+            ship.fuel = 100;
+        }
         this.kill(i);;
     }
 }
@@ -529,31 +569,52 @@ document.addEventListener("keyup", keyUpHandler, false);
 document.addEventListener("mousemove", mouseMoveHandler, false);
 document.addEventListener("click", mouseClickHandler, false);
 
+
+
 resizeTrigger();
 topWindow.menu();
-topWindow.buttons[1].enabled = false;
 topWindow.buttons[2].enabled = false;
-topWindow.buttons[3].enabled = false;
-topWindow.buttons[4].enabled = false;
+
+
 
 //////////////////////////// KEY INPUT ///////////////////////////////////
 
 
 function keyDownHandler(e) {
-    //console.log(e.key);
+    console.log(e.key);
   
-    if(e.key == " " && gameRunning) {
-      ship.go = true;
-      shipLaunch = true;
-    }
-    else if (e.key == "t") {
-        console.log(topWindow.buttons[2].text);
+
+    if (gameMode == 1) {
+        if(e.key == " " && gameRunning) {
+        ship.go = true;
+        shipLaunch = true;
+        }
+        else if (e.key == "t") {
+            console.log(topWindow.buttons[2].text);
+        }
+    } else if (gameMode == 2){
+        if (e.key == " ") {
+            ship.go = true;
+            shipLaunch = true;
+        } else if (e.key == "ArrowUp") {
+            shipUp = true;
+        } else if (e.key == "ArrowDown") {
+            shipDown = true;
+        }
     }
   }
 
-function keyUpHandler(e) {
-    if(e.key == " ") {
-      ship.go = false;
+function keyUpHandler(e) {   
+    if (gameMode == 1) {
+        if(e.key == " ") {
+        ship.go = false;
+        }
+    } else if (gameMode == 2) {
+        if (e.key == "ArrowUp") {
+            shipUp = false;
+        } else if (e.key == "ArrowDown") {
+            shipDown = false;
+        }
     }
 }
 
@@ -565,17 +626,24 @@ function mouseMoveHandler(e) {
     mouseY =  e.clientY - topWindow.canvas.offsetTop;
 }
 
-
 //////////////////////////// Mouse Click ///////////////////////////////////
 
 function mouseClickHandler(e) {
     console.log(bSelected);
     if (bSelected == topWindow.buttons[0].text) {
         gameRunning = true;
-    }   
+    } else if (bSelected == topWindow.buttons[1].text){
+        topWindow.menu2();
+    } else if (bSelected == topWindow.subButtons1[0].text) {
+        gameMode = 1; // 1 is space bar
+        topWindow.menu2();
+    } else if (bSelected == topWindow.subButtons1[1].text) {
+        gameMode = 2; // 2 is up/down
+        topWindow.menu2();
+    }
 }
 
-
+  
 /////////////////////////////  Main Loop  /////////////////////////////
 
 var objectList = [];
@@ -585,10 +653,25 @@ function draw() {
     scoreWindow.ctx.clearRect(0,0, gameWindow.canvas.width, gameWindow.canvas.height);
 
     bTrigger = false;    
-    for (var i = 0; i < topWindow.buttonNum; i++) {
-        topWindow.buttons[i].draw();
-        topWindow.buttons[i].hover();
+    for (var i = 0; i < topWindow.buttons.length; i++) {
+        if (topWindow.buttons[i].active){       
+            topWindow.buttons[i].draw();
+            topWindow.buttons[i].hover();
+        }
     }
+
+    if (topWindow.menu2Open) {
+        for (var i = 0; i < topWindow.subButtons1.length; i++) {
+            if (topWindow.subButtons1[i].active){       
+                topWindow.subButtons1[i].draw();
+                topWindow.subButtons1[i].hover();
+            }
+        }
+    }
+
+
+
+
     if (bTrigger == false) {
         bSelected = "none";    
     }
@@ -682,18 +765,47 @@ function draw() {
                 ship.travelDistance += ship.speed / 1000;
                 boostEnabled = true;
             }
-                        
-            if (ship.go){
-                ship.drawFire();
-                if (ship.y > 0.5) {
-                    ship.y -= ship.speed / 4;
-                    ship.fireY -= ship.speed / 4;
+                  
+            
+            if (gameMode == 1) {
+                if (ship.go){
+                    ship.drawFire();
+                    if (ship.y > 0.5) {
+                        ship.y -= ship.speed / 4;
+                        ship.fireY -= ship.speed / 4;
+                    }
+                    ship.fuel -= (0.05 * (ship.speed / 25));
+                } else {
+                    ship.y += ship.speed / 5;
+                    ship.fireY += ship.speed / 5;
                 }
-                ship.fuel -= (0.05 * (ship.speed / 25));
-            } else {
-                ship.y += ship.speed / 5;
-                ship.fireY += ship.speed / 5;
             }
+
+            if (gameMode == 2) {
+                if (ship.go) {
+                    ship.fuel -= (0.05 * (ship.speed / 25));
+                    if (shipUp) {
+                        if (ship.y > 0.5) {
+                            ship.y -= ship.speed / 4;
+                            ship.fireY -= ship.speed / 4;
+                        }
+                    }
+                    if (shipDown){
+                        ship.y += ship.speed / 4;
+                        ship.fireY += ship.speed / 4;
+                    }     
+                } else {
+                    ship.y += ship.speed / 5;
+                    ship.fireY += ship.speed / 5;
+                }
+
+            }
+
+
+
+
+
+
             ship.levelCheck();
         }
 
@@ -703,9 +815,6 @@ function draw() {
         }
         
     }
-
-
-
 
 
     if (running) {

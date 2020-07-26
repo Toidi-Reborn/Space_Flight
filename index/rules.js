@@ -13,20 +13,17 @@ DONE >  Fix font
 DONE >  Explosion on Hit - done but could be better
 >  Game Over
 >  Logo Open
->  Menu, started
+DONE >  Menu, started
 >  Instructions
 >  TOUCH
 DONE >  Flame on/off
->  Ship rotate
 DONE >  Fuel and Life bars
 DONE >  Warning low fuel / high damage  - Bars flash when low
 DONE >  Gallon(s) - No longer needed
 DONE >  Align text center
 DONE >  FIX canvas align
 DONE >  FIX game canvas stretch issue
-
-> Try pixel perfect collison
-
+DONE >  Explosion on crash
 
 */
 
@@ -77,6 +74,16 @@ function resizeTrigger() {
     
 }
 
+function resetGame () {
+    scoreWindow = new scoreWindowClass();
+    damageBar = new damageBarClass();
+    ship = new shipClass();
+    objectList = [];
+    crashed = new shipCrashSprite();
+    
+    resizeTrigger();
+
+}
 
 /////////////////////////////  Classes  /////////////////////////////
 
@@ -90,7 +97,7 @@ class topWindowClass {
         this.bH = 50;
         this.bX = this.bGap;
         this.midY;
-        this.buttonNames = ["New / Start", "Game Mode", "Instructions - Disabled"];
+        this.buttonNames = ["Reset / Start", "Game Mode", "Instructions - Disabled", "End Game"];
         this.subButtonsNames1 = ["Space Bar Mode", "Up/Down Mode"];
         this.subButtonsNames2 = ["Space ", "n Mode"];
         this.buttons = [];
@@ -135,11 +142,17 @@ class topWindowClass {
         if (this.canvas.height > topH) {
             this.canvas.height = topH;
             this.menu2Open = false;
-            this.buttons[0].enabled = true;
+            for (var i = 0; i < topWindow.buttons.length-1; i++) {
+                topWindow.buttons[i].enabled = true;
+            }
         } else {
             this.canvas.height = topH + 75;
             this.menu2Open = true;
-            this.buttons[0].enabled = false;
+            for (var i = 0; i < topWindow.buttons.length-1; i++) {            
+                if (topWindow.buttons[i].text != topWindow.buttons[1].text){
+                    topWindow.buttons[i].enabled = false;
+                }
+            }
         }
     }   
 }
@@ -201,7 +214,7 @@ class gameWindowClass {
         //this.ctx.fillStyle = "white";  Not sure why this doesnt apply to drawback debug....
         this.shipStartX = 100;
         this.shipStartY = gameH * 0.80;
-        this.starPath = 'index/images/stars2.png';
+        this.starPath = 'index/images/stars.jpg';
         this.starImage = new Image();
         this.starImage.src = this.starPath;
         this.starX = 0;
@@ -362,6 +375,63 @@ class explosionSprite extends gameWindowClass {
     }
 }
 
+class shipCrashSprite extends gameWindowClass {
+    constructor(){
+        super();
+        this.image = new Image();
+        this.image.src = 'index/images/crash.png';
+        this.frameX = 0;
+        this.frameY = 0;
+        this.moveX = 128;        
+        this.moveY = 126;
+        this.trigger = false;
+        this.repeat = true;
+    }
+
+
+    drawExplosion = function(){
+        this.x = ship.x + (ship.w / 2);
+        this.y = ship.y;
+        if (this.trigger) {            
+            if (this.repeat) {
+                this.ctx.drawImage(this.image, this.moveX * this.frameX, this.moveY * this.frameY, this.moveX, this.moveY, this.x-85, this.y-40, 200 , 120);
+                this.frameX -= 1;
+                               
+                if (this.frameX == -1) {
+                    this.repeat = false;                
+                }   
+    
+            } else {
+                this.ctx.drawImage(this.image, this.moveX * this.frameX, this.moveY * this.frameY, this.moveX, this.moveY, this.x-85, this.y-40, 200 , 120);
+                this.frameX += 1;
+
+
+                if (this.frameX == 6){
+                    this.repeat = true;
+                }
+            }
+
+        }
+        else {   
+            this.ctx.drawImage(this.image, this.moveX * this.frameX, this.moveY * this.frameY, this.moveX, this.moveY, this.x-85, this.y-40, 200 , 120);
+            this.frameX += 1;
+            if (this.frameX == 6){
+                this.frameX = 0;
+                this.frameY += 1;
+                if (this.frameY == 5){
+                    this.frameX = 5;
+                    this.frameY = 3;
+                    this.trigger = true;
+                }
+            }
+        }
+
+    }
+}
+
+
+
+
 
 ///////////////// Ship
 
@@ -391,6 +461,7 @@ class shipClass extends gameWindowClass{
         this.w = 150;
         this.fireW = this.w * 0.33;
         this.h = 100;
+        this.crashed = false;
         this.fireX = this.x;
         this.fireY = this.y + this.h;
         this.level2 = false;
@@ -427,7 +498,6 @@ class shipClass extends gameWindowClass{
 
     drawFire = function() {
         this.ctx.drawImage(this.fireImage, this.fireX - this.fireW, this.fireY, this.fireW, this.h);
-        console.log(this.fireImage.width)
     
     }
 
@@ -569,8 +639,6 @@ document.addEventListener("keyup", keyUpHandler, false);
 document.addEventListener("mousemove", mouseMoveHandler, false);
 document.addEventListener("click", mouseClickHandler, false);
 
-
-
 resizeTrigger();
 topWindow.menu();
 topWindow.buttons[2].enabled = false;
@@ -581,7 +649,7 @@ topWindow.buttons[2].enabled = false;
 
 
 function keyDownHandler(e) {
-    console.log(e.key);
+    //console.log(e.key);
   
 
     if (gameMode == 1) {
@@ -590,7 +658,6 @@ function keyDownHandler(e) {
         shipLaunch = true;
         }
         else if (e.key == "t") {
-            console.log(topWindow.buttons[2].text);
         }
     } else if (gameMode == 2){
         if (e.key == " ") {
@@ -602,7 +669,7 @@ function keyDownHandler(e) {
             shipDown = true;
         }
     }
-  }
+}
 
 function keyUpHandler(e) {   
     if (gameMode == 1) {
@@ -629,28 +696,64 @@ function mouseMoveHandler(e) {
 //////////////////////////// Mouse Click ///////////////////////////////////
 
 function mouseClickHandler(e) {
-    console.log(bSelected);
     if (bSelected == topWindow.buttons[0].text) {
-        gameRunning = true;
-    } else if (bSelected == topWindow.buttons[1].text){
+        //gameRunning = true;
+        resetGame();
+    }
+    else if (bSelected == topWindow.buttons[1].text){
         topWindow.menu2();
-    } else if (bSelected == topWindow.subButtons1[0].text) {
+    }
+    else if (bSelected == topWindow.buttons[2].text) {
+
+
+
+
+
+    }
+    else if (bSelected == topWindow.buttons[3].text) {
+        ship.image.src = ship.path7;
+        ship.fuel = 0;
+        ship.dam = 0;
+        shipLaunch = false;
+        boostEnabled = false;
+        ship.go = false;
+    }
+    //else if (bSelected == topWindow.buttons[4].text) {    }
+    else if (bSelected == topWindow.subButtons1[0].text) {
         gameMode = 1; // 1 is space bar
         topWindow.menu2();
-    } else if (bSelected == topWindow.subButtons1[1].text) {
+    }
+    else if (bSelected == topWindow.subButtons1[1].text) {
         gameMode = 2; // 2 is up/down
         topWindow.menu2();
     }
+
 }
 
   
 /////////////////////////////  Main Loop  /////////////////////////////
 
 var objectList = [];
+resetGame();
+gameRunning = true;
+var crashed = new shipCrashSprite();
+
 
 function draw() {
     gameWindow.ctx.clearRect(0,0, gameWindow.canvas.width, gameWindow.canvas.height);
     scoreWindow.ctx.clearRect(0,0, gameWindow.canvas.width, gameWindow.canvas.height);
+
+    if (shipLaunch) {
+        for (var i = 0; i < topWindow.buttons.length -1; i++) {
+            topWindow.buttons[i].enabled = false;
+        }
+    }
+    else if (topWindow.menu2Open == false){   
+        for (var i = 0; i < topWindow.buttons.length-1; i++) {
+            topWindow.buttons[i].enabled = true;
+        
+        }
+    }
 
     bTrigger = false;    
     for (var i = 0; i < topWindow.buttons.length; i++) {
@@ -669,14 +772,9 @@ function draw() {
         }
     }
 
-
-
-
     if (bTrigger == false) {
         bSelected = "none";    
     }
-
-
     gameWindow.drawBack();
     damageBar.drawBar();
     
@@ -749,9 +847,16 @@ function draw() {
             shipLaunch = false;
             boostEnabled = false;
             ship.go = false;
+            ship.crashed = true;
         }
 
         ship.drawShip();
+
+        if (ship.crashed) {
+            crashed.drawExplosion();
+        }
+
+
 
         if (shipLaunch){
     

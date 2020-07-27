@@ -385,46 +385,48 @@ class shipCrashSprite extends gameWindowClass {
         this.moveX = 128;        
         this.moveY = 126;
         this.trigger = false;
-        this.repeat = true;
+        this.skip = true;
+
+
     }
 
 
     drawExplosion = function(){
         this.x = ship.x + (ship.w / 2);
         this.y = ship.y;
-        if (this.trigger) {            
-            if (this.repeat) {
-                this.ctx.drawImage(this.image, this.moveX * this.frameX, this.moveY * this.frameY, this.moveX, this.moveY, this.x-85, this.y-40, 200 , 120);
+        
+
+        if (this.skip){            
+            this.ctx.drawImage(this.image, this.moveX * this.frameX, this.moveY * this.frameY, this.moveX, this.moveY, this.x-85, this.y-55, 200 , 120);
+
+            if (this.trigger){
                 this.frameX -= 1;
-                               
-                if (this.frameX == -1) {
-                    this.repeat = false;                
-                }   
-    
-            } else {
-                this.ctx.drawImage(this.image, this.moveX * this.frameX, this.moveY * this.frameY, this.moveX, this.moveY, this.x-85, this.y-40, 200 , 120);
-                this.frameX += 1;
-
-
-                if (this.frameX == 6){
-                    this.repeat = true;
-                }
-            }
-
-        }
-        else {   
-            this.ctx.drawImage(this.image, this.moveX * this.frameX, this.moveY * this.frameY, this.moveX, this.moveY, this.x-85, this.y-40, 200 , 120);
-            this.frameX += 1;
-            if (this.frameX == 6){
-                this.frameX = 0;
-                this.frameY += 1;
-                if (this.frameY == 5){
+                if (this.frameX < 0) {
+                    this.frameY -= 1;
                     this.frameX = 5;
-                    this.frameY = 3;
-                    this.trigger = true;
+                    if (this.frameY < 2){
+                        this.trigger = false;
+                    }
                 }
+
+            }
+
+            else {
+                this.frameX += 1;
+                if (this.frameX > 5) {
+                    this.frameY += 1;
+                    this.frameX = 0;
+                    if (this.frameY > 3){
+                        this.trigger = true;
+                    }
+                }
+
             }
         }
+
+        this.skip = !this.skip;
+        
+
 
     }
 }

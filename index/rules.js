@@ -24,6 +24,8 @@ DONE >  Align text center
 DONE >  FIX canvas align
 DONE >  FIX game canvas stretch issue
 DONE >  Explosion on crash
+>  Fireing?
+>  Life pickup?
 
 */
 
@@ -61,7 +63,6 @@ function resizeTrigger() {
     topWindow.canvas.height = topH;
     topWindow.bW = ( w - (topWindow.buttons.length * topWindow.bGap) - topWindow.bGap) / topWindow.buttonNum;
     topWindow.midY = (topH - (topWindow.bH)) / 2;
-
 
     gameWindow.canvas.width = w;
     gameWindow.canvas.height = gameH;
@@ -104,6 +105,9 @@ class topWindowClass {
         this.subButtons1 = [];
         this.subButtons2 = [];
         this.menu2Open = false;
+        
+        this.insImage = new Image();
+        this.insImage.src = 'index/images/modes.png';
     }
 
     startText = function(){
@@ -123,7 +127,7 @@ class topWindowClass {
         }
 
         for (var i = 0; i < this.subButtonsNames1.length; i++) {
-            var newX = (this.buttons[1].x - this.bGap) + this.bX + (i * (this.bGap + this.bW)); //this.buttonNames[1].x  added to shift sub buttons
+            var newX = this.bX + (i * (this.bGap + this.bW)); //this.buttonNames[1].x  added to shift sub buttons
             this.text = this.subButtonsNames1[i];
             var a = new buttonClass(newX , this.midY + 75, this.bW, this.bH, this.text );  // x, y, w, h, t\
             topWindow.subButtons1.push(a);
@@ -146,17 +150,20 @@ class topWindowClass {
                 topWindow.buttons[i].enabled = true;
             }
         } else {
-            this.canvas.height = topH + 75;
+            this.canvas.height = topH + 275;
             this.menu2Open = true;
+            this.ctx.drawImage(this.insImage, 10, 200, 500, 200);
+
             for (var i = 0; i < topWindow.buttons.length-1; i++) {            
                 if (topWindow.buttons[i].text != topWindow.buttons[1].text){
                     topWindow.buttons[i].enabled = false;
                 }
             }
         }
-    }   
-}
+    }
+    
 
+}
 
 class buttonClass {
     constructor(x, y, w, h, text) {
@@ -220,6 +227,7 @@ class gameWindowClass {
         this.starX = 0;
         this.scrollStart = this.canvas.width * 0.45;
     }
+
 
 
     drawBack = function(){
@@ -430,8 +438,6 @@ class shipCrashSprite extends gameWindowClass {
 
     }
 }
-
-
 
 
 
@@ -780,6 +786,7 @@ function draw() {
     gameWindow.drawBack();
     damageBar.drawBar();
     
+
     if (gameRunning){
         var trigger = Math.random() * 1000;
         trigger = trigger.toFixed(0);
